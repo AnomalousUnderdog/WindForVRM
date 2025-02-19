@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UniGLTF.SpringBoneJobs.Blittables;
 using UnityEngine;
 using UniVRM10;
 
@@ -59,6 +60,7 @@ namespace WindForVRM
         [SerializeField] private float strengthFactor = 1.0f;
         [SerializeField] private float timeFactor = 1.0f;
 
+        private IVrm10SpringBoneRuntime _springBoneController;
         private float _windGenerateCount = 0;
         private VRM10SpringBoneJoint[] _springBones = new VRM10SpringBoneJoint[] { };
         private Vector3[] _originalGravityDirections = new Vector3[] { };
@@ -119,7 +121,24 @@ namespace WindForVRM
         /// <param name="vrmRoot"></param>
         public void LoadVrm(Transform vrmRoot)
         {
+            var vrmInstance = vrmRoot.GetComponent<Vrm10Instance>();
+            if (vrmInstance == null)
+            {
+                Debug.LogError($"For VRMWind, {vrmRoot.name} needs to have a Vrm10Instance component. Aborting.", vrmRoot);
+                enabled = false;
+                return;
+            }
+
+            _springBoneController = vrmInstance.Runtime.SpringBone;
+
             _springBones = vrmRoot.GetComponentsInChildren<VRM10SpringBoneJoint>();
+            if (_springBones.Length == 0)
+            {
+                Debug.LogWarning($"For VRMWind, {vrmRoot.name} has no VRM10SpringBoneJoint inside. Aborting.", vrmRoot);
+                enabled = false;
+                return;
+            }
+
             _originalGravityDirections = _springBones.Select(b => b.m_gravityDir).ToArray();
             _originalGravityFactors = _springBones.Select(b => b.m_gravityPower).ToArray();
         }
@@ -160,11 +179,14 @@ namespace WindForVRM
 
             for (int i = 0; i < _springBones.Length; i++)
             {
-                var bone = _springBones[i];
                 //NOTE: 力を合成して斜めに力をかけるのが狙い
                 var forceSum = _originalGravityFactors[i] * _originalGravityDirections[i] + windForce;
-                bone.m_gravityDir = forceSum.normalized;
-                bone.m_gravityPower = forceSum.magnitude;
+
+                _springBoneController.SetJointLevel(_springBones[i].transform, new BlittableJointMutable()
+                {
+                    gravityDir = forceSum.normalized,
+                    gravityPower = forceSum.magnitude,
+                });
             }
         }
 
@@ -173,9 +195,11 @@ namespace WindForVRM
         {
             for (int i = 0; i < _springBones.Length; i++)
             {
-                var bone = _springBones[i];
-                bone.m_gravityDir = _originalGravityDirections[i];
-                bone.m_gravityPower = _originalGravityFactors[i];
+                _springBoneController.SetJointLevel(_springBones[i].transform, new BlittableJointMutable()
+                {
+                    gravityDir = _originalGravityDirections[i],
+                    gravityPower = _originalGravityFactors[i],
+                });
             }
         }
 
