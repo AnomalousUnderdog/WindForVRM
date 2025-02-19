@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UniGLTF.SpringBoneJobs.Blittables;
 using UnityEngine;
 using UniVRM10;
@@ -37,8 +38,8 @@ namespace WindForVRM
                     : MaxFactor * (1 - (TimeCount - RiseCount) / SitCount);
         }
 
-        [Tooltip("If assigned, only Spring Bone Joints found in these transforms will be affected by the wind.\nIf empty, all Spring Bone Joints from the root of the VRM will be affected.\n\nUse this to exclude certain Spring Bone Joints from being affected by the wind (such as the bust, for example).")]
-        [SerializeField] private List<Transform> affectedByWind;
+        [Tooltip("Spring Bone Joints whose name matches any of these Regex patterns will NOT be affected by the wind.\nIf empty, all Spring Bone Joints from the root of the VRM will be affected.\n\nUse this to exclude certain Spring Bone Joints from being affected by the wind (such as the bust, for example).")]
+        [SerializeField] private List<string> notAffectedByWindRegex;
 
         [Tooltip("このコンポーネントがVRMアバターにアタッチされており、自動で初期化したい場合はチェックをオンにします。")]
         [SerializeField] private bool loadAutomatic = false;
@@ -134,18 +135,18 @@ namespace WindForVRM
             _springBoneController = vrmInstance.Runtime.SpringBone;
 
             _springBones.Clear();
-            if (affectedByWind.Count > 0)
+            vrmRoot.GetComponentsInChildren(_springBones);
+            for (int i = 0; i < notAffectedByWindRegex.Count; ++i)
             {
-                var gotJointsBuffer = new List<VRM10SpringBoneJoint>();
-                for (int i = 0; i < affectedByWind.Count; ++i)
+                Regex r = new Regex(notAffectedByWindRegex[i]);
+
+                for (int j = _springBones.Count - 1; j >= 0; --j)
                 {
-                    affectedByWind[i].GetComponentsInChildren(gotJointsBuffer);
-                    _springBones.AddRange(gotJointsBuffer);
+                    if (r.IsMatch(_springBones[j].name))
+                    {
+                        _springBones.RemoveAt(j);
+                    }
                 }
-            }
-            else
-            {
-                vrmRoot.GetComponentsInChildren(_springBones);
             }
 
             if (_springBones.Count == 0)
