@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using VRM;
+using UniVRM10;
 
 namespace WindForVRM
 {
@@ -21,8 +21,8 @@ namespace WindForVRM
                 MaxFactor = maxFactor;
 
                 TotalTime = RiseCount + SitCount;
-            } 
-            
+            }
+
             public Vector3 Orientation { get; }
             public float RiseCount { get; }
             public float SitCount { get; }
@@ -35,8 +35,8 @@ namespace WindForVRM
                     ? MaxFactor * TimeCount / RiseCount
                     : MaxFactor * (1 - (TimeCount - RiseCount) / SitCount);
         }
-        
-        
+
+
         [Tooltip("このコンポーネントがVRMアバターにアタッチされており、自動で初期化したい場合はチェックをオンにします。")]
         [SerializeField] private bool loadAutomatic = false;
 
@@ -45,10 +45,10 @@ namespace WindForVRM
 
         [Tooltip("基本になる風向き。ワールド座標で指定します。")]
         [SerializeField] private Vector3 windBaseOrientation = Vector3.right;
-        
+
         [Tooltip("風向きをちょっとランダムにするためのファクタ")]
         [SerializeField] private float windOrientationRandomPower = 0.2f;
-        
+
         //風の強さ、発生頻度、立ち上がりと立ち下がりの時間を、それぞれ全てRandom.Rangeに通すために幅付きの値にする
         [SerializeField] private Vector2 windStrengthRange = new Vector2(0.03f, 0.06f);
         [SerializeField] private Vector2 windIntervalRange = new Vector2(0.7f, 1.9f);
@@ -58,9 +58,9 @@ namespace WindForVRM
         //上記の強さと時間を定数倍するファクタ
         [SerializeField] private float strengthFactor = 1.0f;
         [SerializeField] private float timeFactor = 1.0f;
-        
+
         private float _windGenerateCount = 0;
-        private VRMSpringBone[] _springBones = new VRMSpringBone[] { };
+        private VRM10SpringBoneJoint[] _springBones = new VRM10SpringBoneJoint[] { };
         private Vector3[] _originalGravityDirections = new Vector3[] { };
         private float[] _originalGravityFactors = new float[] { };
         private readonly List<WindItem> _windItems = new List<WindItem>();
@@ -110,8 +110,8 @@ namespace WindForVRM
             get => timeFactor;
             set => timeFactor = value;
         }
-        
-        
+
+
         /// <summary>
         /// 対象となるVRMのルート要素を指定してVRMを読み込みます。
         /// loadAutomaticがオンで、あらかじめこのコンポーネントがVRMにアタッチされている場合、呼び出しは不要です。
@@ -119,17 +119,17 @@ namespace WindForVRM
         /// <param name="vrmRoot"></param>
         public void LoadVrm(Transform vrmRoot)
         {
-            _springBones = vrmRoot.GetComponentsInChildren<VRMSpringBone>();
+            _springBones = vrmRoot.GetComponentsInChildren<VRM10SpringBoneJoint>();
             _originalGravityDirections = _springBones.Select(b => b.m_gravityDir).ToArray();
             _originalGravityFactors = _springBones.Select(b => b.m_gravityPower).ToArray();
-        }        
+        }
 
         /// <summary>
         /// VRMを破棄するとき、もしこのコンポーネントが破棄されない場合は、これを呼び出してリソースを解放します。
         /// </summary>
         public void UnloadVrm()
         {
-            _springBones = new VRMSpringBone[] { };
+            _springBones = new VRM10SpringBoneJoint[] { };
             _originalGravityDirections = new Vector3[]{ };
             _originalGravityFactors = new float[] { };
         }
@@ -151,7 +151,7 @@ namespace WindForVRM
 
             UpdateWindGenerateCount();
             UpdateWindItems();
-            
+
             Vector3 windForce = Vector3.zero;
             for (int i = 0; i < _windItems.Count; i++)
             {
@@ -178,7 +178,7 @@ namespace WindForVRM
                 bone.m_gravityPower = _originalGravityFactors[i];
             }
         }
-        
+
         /// <summary> 時間をカウントすることで、必要なタイミングでランダムな強さと方向を持ったWindItemを生成します。 </summary>
         private void UpdateWindGenerateCount()
         {
@@ -188,17 +188,17 @@ namespace WindForVRM
                 return;
             }
             _windGenerateCount = Random.Range(windIntervalRange.x, windIntervalRange.y) * timeFactor;
-            
+
             var windOrientation = (
-                windBaseOrientation.normalized + 
+                windBaseOrientation.normalized +
                 new Vector3(
                    Random.Range(-windOrientationRandomPower, windOrientationRandomPower),
                    Random.Range(-windOrientationRandomPower, windOrientationRandomPower),
                    Random.Range(-windOrientationRandomPower, windOrientationRandomPower)
                     )).normalized;
-            
+
             _windItems.Add(new WindItem(
-                windOrientation,    
+                windOrientation,
                 Random.Range(windRiseCountRange.x, windRiseCountRange.y),
                 Random.Range(windSitCountRange.x, windSitCountRange.y),
                 Random.Range(windStrengthRange.x, windStrengthRange.y) * strengthFactor
