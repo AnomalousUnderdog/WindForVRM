@@ -12,7 +12,7 @@ namespace WindForVRM
     public class VRMWind : MonoBehaviour
     {
         //ふわっと強くなってから弱まる一連の動きを表現する、個別の風要素
-        class WindItem
+        struct WindItem
         {
             public WindItem(Vector3 orientation, float riseCount, float sitCount, float maxFactor)
             {
@@ -21,6 +21,7 @@ namespace WindForVRM
                 SitCount = sitCount;
                 MaxFactor = maxFactor;
 
+                TimeCount = 0;
                 TotalTime = RiseCount + SitCount;
             }
 
@@ -241,6 +242,10 @@ namespace WindForVRM
                 if (item.TimeCount >= item.TotalTime)
                 {
                     _windItems.RemoveAt(i);
+                }
+                else
+                {
+                    _windItems[i] = item;
                 }
             }
         }
