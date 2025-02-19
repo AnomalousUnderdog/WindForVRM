@@ -38,6 +38,8 @@ namespace WindForVRM
                     : MaxFactor * (1 - (TimeCount - RiseCount) / SitCount);
         }
 
+        [Tooltip("If assigned, only Spring Bone Joints found in these transforms will be affected by the wind.\nIf empty, all Spring Bone Joints from the root of the VRM will be affected.\n\nUse this to exclude certain Spring Bone Joints from being affected by the wind (such as the bust, for example).")]
+        [SerializeField] private List<Transform> affectedByWind;
 
         [Tooltip("このコンポーネントがVRMアバターにアタッチされており、自動で初期化したい場合はチェックをオンにします。")]
         [SerializeField] private bool loadAutomatic = false;
@@ -63,7 +65,7 @@ namespace WindForVRM
 
         private IVrm10SpringBoneRuntime _springBoneController;
         private float _windGenerateCount = 0;
-        private VRM10SpringBoneJoint[] _springBones = new VRM10SpringBoneJoint[] { };
+        private readonly List<VRM10SpringBoneJoint> _springBones = new List<VRM10SpringBoneJoint>();
         private Vector3[] _originalGravityDirections = new Vector3[] { };
         private float[] _originalGravityFactors = new float[] { };
         private readonly List<WindItem> _windItems = new List<WindItem>();
@@ -132,10 +134,24 @@ namespace WindForVRM
 
             _springBoneController = vrmInstance.Runtime.SpringBone;
 
-            _springBones = vrmRoot.GetComponentsInChildren<VRM10SpringBoneJoint>();
-            if (_springBones.Length == 0)
+            _springBones.Clear();
+            if (affectedByWind.Count > 0)
             {
-                Debug.LogWarning($"For VRMWind, {vrmRoot.name} has no VRM10SpringBoneJoint inside. Aborting.", vrmRoot);
+                var gotJointsBuffer = new List<VRM10SpringBoneJoint>();
+                for (int i = 0; i < affectedByWind.Count; ++i)
+                {
+                    affectedByWind[i].GetComponentsInChildren(gotJointsBuffer);
+                    _springBones.AddRange(gotJointsBuffer);
+                }
+            }
+            else
+            {
+                vrmRoot.GetComponentsInChildren(_springBones);
+            }
+
+            if (_springBones.Count == 0)
+            {
+                Debug.LogWarning($"For VRMWind, no VRM10SpringBoneJoints were found in {vrmRoot.name}. Aborting.", vrmRoot);
                 enabled = false;
                 return;
             }
@@ -149,7 +165,7 @@ namespace WindForVRM
         /// </summary>
         public void UnloadVrm()
         {
-            _springBones = new VRM10SpringBoneJoint[] { };
+            _springBones.Clear();
             _originalGravityDirections = new Vector3[]{ };
             _originalGravityFactors = new float[] { };
         }
@@ -180,7 +196,7 @@ namespace WindForVRM
                 windForce += _windItems[i].CurrentFactor;
             }
 
-            for (int i = 0; i < _springBones.Length; i++)
+            for (int i = 0; i < _springBones.Count; i++)
             {
                 //NOTE: 力を合成して斜めに力をかけるのが狙い
 
@@ -195,7 +211,7 @@ namespace WindForVRM
         /// <summary> 風の影響をリセットし、SpringBoneのGravityに関する設定を初期状態に戻します。 </summary>
         private void DisableWind()
         {
-            for (int i = 0; i < _springBones.Length; i++)
+            for (int i = 0; i < _springBones.Count; i++)
             {
                 _springBoneController.SetJointLevel(_springBones[i].transform, new BlittableJointMutable()
                 {
