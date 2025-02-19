@@ -168,8 +168,8 @@ namespace WindForVRM
                 return;
             }
 
-            UpdateWindGenerateCount();
-            UpdateWindItems();
+            CreateNewWindItemWhenNeeded();
+            DeleteExpiredWindItems();
 
             Vector3 windDirection = Vector3.zero;
             float windForce = 0;
@@ -205,7 +205,7 @@ namespace WindForVRM
         }
 
         /// <summary> 時間をカウントすることで、必要なタイミングでランダムな強さと方向を持ったWindItemを生成します。 </summary>
-        private void UpdateWindGenerateCount()
+        private void CreateNewWindItemWhenNeeded()
         {
             _windGenerateCount -= Time.deltaTime;
             if (_windGenerateCount > 0)
@@ -231,7 +231,7 @@ namespace WindForVRM
         }
 
         /// <summary> 個別のWindItemについて、時間の経過状態を更新し、不要なオブジェクトがあれば破棄します。 </summary>
-        private void UpdateWindItems()
+        private void DeleteExpiredWindItems()
         {
             //Removeする可能性があるので逆順にやってます
             for (int i = _windItems.Count - 1; i >= 0; i--)
