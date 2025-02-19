@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UniGLTF.SpringBoneJobs.Blittables;
 using UnityEngine;
 using UniVRM10;
@@ -156,8 +155,13 @@ namespace WindForVRM
                 return;
             }
 
-            _originalGravityDirections = _springBones.Select(b => b.m_gravityDir).ToArray();
-            _originalGravityFactors = _springBones.Select(b => b.m_gravityPower).ToArray();
+            _originalGravityDirections = new Vector3[_springBones.Count];
+            _originalGravityFactors = new float[_springBones.Count];
+            for (int i = 0; i < _springBones.Count; ++i)
+            {
+                _originalGravityDirections[i] = _springBones[i].m_gravityDir;
+                _originalGravityFactors[i] = _springBones[i].m_gravityPower;
+            }
         }
 
         /// <summary>
