@@ -2,6 +2,23 @@ Copyright 2019-2022 @baku_dreameater
 
 # WindForVRM
 
+## Changes
+
+* Code now works for VRM 1.0 (no longer works for old version of VRM). 
+* Project now uses Unity 2022.3.57f1.
+* Added optional feature to exclude certain Spring Bone Joints from being affected by the wind.
+  | Before  | After |
+  | ------------- | ------------- |
+  | ![Bust Affected](./gif/BustAffected.gif)  | ![Bust not Affected](./gif/BustNotAffected.gif)  |
+
+  Use the new property `Not Affected By Wind Regex` to prevent the bust from moving:
+
+  ![NotAffectedByWindSettings](./NotAffectedByWindSettings.png)
+
+  This is compared against the GameObject name. Since bone names in VRM are standardized, it's easy to create a Regex pattern that will work for any VRM avatar. For example, `_Bust[0-9]` will work for any character.
+
+## Original README
+
 * 獏星(ばくすたー)
 * 2019/11/09
 
