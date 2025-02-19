@@ -17,32 +17,32 @@ namespace WindForVRM
             public WindItem(Vector3 orientation, float riseCount, float sitCount, float maxFactor)
             {
                 Orientation = orientation;
-                RiseCount = riseCount;
-                SitCount = sitCount;
-                MaxFactor = maxFactor;
+                _riseCount = riseCount;
+                _sitCount = sitCount;
+                _maxFactor = maxFactor;
 
                 TimeCount = 0;
-                TotalTime = RiseCount + SitCount;
             }
 
             public Vector3 Orientation { get; }
-            public float RiseCount { get; }
-            public float SitCount { get; }
-            public float MaxFactor { get; }
-            public float TotalTime { get; }
             public float TimeCount { get; set; }
 
+            public float TotalTime => _riseCount + _sitCount;
             public float CurrentFactor =>
-                TimeCount < RiseCount
-                    ? MaxFactor * TimeCount / RiseCount
-                    : MaxFactor * (1 - (TimeCount - RiseCount) / SitCount);
+                TimeCount < _riseCount
+                    ? _maxFactor * TimeCount / _riseCount
+                    : _maxFactor * (1 - (TimeCount - _riseCount) / _sitCount);
+
+            private readonly float _riseCount;
+            private readonly float _sitCount;
+            private readonly float _maxFactor;
         }
 
         [Tooltip("Spring Bone Joints whose name matches any of these Regex patterns will NOT be affected by the wind.\nIf empty, all Spring Bone Joints from the root of the VRM will be affected.\n\nUse this to exclude certain Spring Bone Joints from being affected by the wind (such as the bust, for example).")]
         [SerializeField] private List<string> notAffectedByWindRegex;
 
         [Tooltip("このコンポーネントがVRMアバターにアタッチされており、自動で初期化したい場合はチェックをオンにします。")]
-        [SerializeField] private bool loadAutomatic = false;
+        [SerializeField] private bool loadAutomatic;
 
         [Tooltip("風の計算を有効化するかどうか")]
         [SerializeField] private bool enableWind = true;
@@ -64,11 +64,11 @@ namespace WindForVRM
         [SerializeField] private float timeFactor = 1.0f;
 
         private IVrm10SpringBoneRuntime _springBoneController;
-        private float _windGenerateCount = 0;
+        private float _windGenerateCount;
         private readonly List<VRM10SpringBoneJoint> _springBones = new List<VRM10SpringBoneJoint>();
-        private Vector3[] _originalGravityDirections = new Vector3[] { };
-        private float[] _originalGravityFactors = new float[] { };
-        private readonly List<WindItem> _windItems = new List<WindItem>();
+        private Vector3[] _originalGravityDirections;
+        private float[] _originalGravityFactors;
+        private readonly List<WindItem> _windItems = new List<WindItem>(4);
 
         /// <summary> 風の計算を有効にするかどうかを取得、設定します。 </summary>
         public bool EnableWind
@@ -170,9 +170,8 @@ namespace WindForVRM
         /// </summary>
         public void UnloadVrm()
         {
+            _springBoneController = null;
             _springBones.Clear();
-            _originalGravityDirections = new Vector3[]{ };
-            _originalGravityFactors = new float[] { };
         }
 
         private void Start()
@@ -185,7 +184,7 @@ namespace WindForVRM
 
         private void Update()
         {
-            if (!EnableWind)
+            if (!EnableWind || _springBoneController == null)
             {
                 return;
             }
@@ -216,6 +215,11 @@ namespace WindForVRM
         /// <summary> 風の影響をリセットし、SpringBoneのGravityに関する設定を初期状態に戻します。 </summary>
         private void DisableWind()
         {
+            if (_springBoneController == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < _springBones.Count; i++)
             {
                 _springBoneController.SetJointLevel(_springBones[i].transform, new BlittableJointMutable()
