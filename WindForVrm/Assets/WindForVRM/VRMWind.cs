@@ -171,21 +171,22 @@ namespace WindForVRM
             UpdateWindGenerateCount();
             UpdateWindItems();
 
-            Vector3 windForce = Vector3.zero;
+            Vector3 windDirection = Vector3.zero;
+            float windForce = 0;
             for (int i = 0; i < _windItems.Count; i++)
             {
-                windForce += _windItems[i].CurrentFactor * _windItems[i].Orientation;
+                windDirection += _windItems[i].Orientation;
+                windForce += _windItems[i].CurrentFactor;
             }
 
             for (int i = 0; i < _springBones.Length; i++)
             {
                 //NOTE: 力を合成して斜めに力をかけるのが狙い
-                var forceSum = _originalGravityFactors[i] * _originalGravityDirections[i] + windForce;
 
                 _springBoneController.SetJointLevel(_springBones[i].transform, new BlittableJointMutable()
                 {
-                    gravityDir = forceSum.normalized,
-                    gravityPower = forceSum.magnitude,
+                    gravityDir = (_originalGravityDirections[i] + windDirection).normalized,
+                    gravityPower = _originalGravityFactors[i] + windForce,
                 });
             }
         }
